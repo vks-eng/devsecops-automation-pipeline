@@ -1,0 +1,52 @@
+{
+  "dependencies": [
+    {"name": "fastapi", "version": "0.115.6", "vulns": []},
+    {
+      "name": "requests",
+      "version": "2.28.2",
+      "vulns": [
+        {
+          "id": "GHSA-j8r2-6x86-q33q",
+          "fix_versions": ["2.31.0"],
+          "aliases": ["CVE-2023-32681"],
+          "description": "Requests may leak Proxy-Authorization headers to destination servers when following HTTPS redirects."
+        },
+        {
+          "id": "GHSA-9wx4-h78v-vm56",
+          "fix_versions": ["2.32.0"],
+          "aliases": ["CVE-2024-35195"],
+          "description": "Session verify=False persists for subsequent requests to the same host."
+        }
+      ]
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.2",
+      "vulns": [
+        {
+          "id": "GHSA-h75v-3vvj-5mfj",
+          "fix_versions": ["3.1.4"],
+          "aliases": ["CVE-2024-34064"],
+          "description": "The xmlattr filter accepts keys containing non-attribute characters."
+        }
+      ]
+    },
+    {
+      "name": "legacy-crypto-helper",
+      "version": "0.3.1",
+      "vulns": [
+        {
+          "id": "PYSEC-0000-DEMO",
+          "fix_versions": [],
+          "aliases": [],
+          "description": "Illustrative advisory without a fixed release."
+        }
+      ]
+    },
+    {"name": "internal-sdk", "skip_reason": "Dependency not found on PyPI and could not be audited: internal-sdk (1.4.0)"}
+  ],
+  "fixes": [
+    {"name": "requests", "version": "2.28.2", "new_version": "2.32.0"},
+    {"name": "jinja2", "version": "3.1.2", "new_version": "3.1.4"}
+  ]
+}

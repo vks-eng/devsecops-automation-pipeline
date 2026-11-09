@@ -1,0 +1,84 @@
+{
+  "requests": [
+    {
+      "id": "GHSA-j8r2-6x86-q33q",
+      "aliases": ["CVE-2023-32681"],
+      "fixed_in": "2.31.0",
+      "introduced": "2.3.0",
+      "description": "Requests may leak Proxy-Authorization headers to destination servers when following HTTPS redirects."
+    },
+    {
+      "id": "GHSA-9wx4-h78v-vm56",
+      "aliases": ["CVE-2024-35195"],
+      "fixed_in": "2.32.0",
+      "description": "When the first request in a Session is made with verify=False, subsequent requests to the same host keep ignoring certificate verification."
+    }
+  ],
+  "jinja2": [
+    {
+      "id": "GHSA-h5c8-rqwp-cp95",
+      "aliases": ["CVE-2024-22195"],
+      "fixed_in": "3.1.3",
+      "description": "The xmlattr filter accepts keys containing spaces, which may allow injection of arbitrary HTML attributes."
+    },
+    {
+      "id": "GHSA-h75v-3vvj-5mfj",
+      "aliases": ["CVE-2024-34064"],
+      "fixed_in": "3.1.4",
+      "description": "The xmlattr filter accepts keys containing non-attribute characters, allowing attribute injection."
+    }
+  ],
+  "flask": [
+    {
+      "id": "GHSA-m2qf-hxjv-5gpq",
+      "aliases": ["CVE-2023-30861"],
+      "fixed_in": "2.2.5",
+      "description": "Session cookie may be cached by a caching proxy and shared with other clients under specific conditions."
+    }
+  ],
+  "urllib3": [
+    {
+      "id": "GHSA-v845-jxx5-vc9f",
+      "aliases": ["CVE-2023-43804"],
+      "fixed_in": "1.26.17",
+      "description": "Cookie request header is not stripped during cross-origin redirects."
+    },
+    {
+      "id": "GHSA-34jh-p97f-mpxf",
+      "aliases": ["CVE-2024-37891"],
+      "fixed_in": "1.26.19",
+      "description": "Proxy-Authorization request header is not stripped during cross-origin redirects when using the urllib3 proxy support incorrectly."
+    }
+  ],
+  "gunicorn": [
+    {
+      "id": "GHSA-w3h3-4rj7-4ph4",
+      "aliases": ["CVE-2024-1135"],
+      "fixed_in": "22.0.0",
+      "description": "Improper validation of Transfer-Encoding headers can lead to HTTP request smuggling."
+    }
+  ],
+  "pyyaml": [
+    {
+      "id": "PYSEC-2021-142",
+      "aliases": ["CVE-2020-14343"],
+      "fixed_in": "5.4",
+      "description": "Arbitrary code execution when processing untrusted YAML with full_load or FullLoader."
+    }
+  ],
+  "werkzeug": [
+    {
+      "id": "GHSA-xg9f-g7g7-2323",
+      "aliases": ["CVE-2023-25577"],
+      "fixed_in": "2.2.3",
+      "description": "High resource usage when parsing multipart form data with many fields."
+    }
+  ],
+  "legacy-crypto-helper": [
+    {
+      "id": "PYSEC-0000-DEMO",
+      "aliases": [],
+      "description": "Illustrative unfixed advisory used by the mock adapter to demonstrate 'no fix available' handling."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "id": 99887766554,
+    "name": "CI",
+    "head_branch": "main",
+    "head_sha": "e0c4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "html_url": "https://github.com/acme-demo/payments-api/actions/runs/99887766554",
+    "created_at": "2026-11-09T08:00:00Z",
+    "updated_at": "2026-11-09T08:05:42Z",
+    "run_started_at": "2026-11-09T08:00:03Z",
+    "actor": {"login": "alice-dev", "id": 1001}
+  },
+  "workflow": {"id": 7654321, "name": "CI", "path": ".github/workflows/ci.yml"},
+  "repository": {"id": 555000111, "name": "payments-api", "full_name": "acme-demo/payments-api", "private": true},
+  "sender": {"login": "alice-dev", "id": 1001}
+}

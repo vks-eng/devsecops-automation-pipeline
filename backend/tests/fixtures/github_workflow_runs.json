@@ -1,0 +1,52 @@
+{
+  "total_count": 3,
+  "workflow_runs": [
+    {
+      "id": 11223344551,
+      "name": "CI",
+      "node_id": "WFR_kwLOAbcdef",
+      "head_branch": "main",
+      "head_sha": "b7f1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9",
+      "path": ".github/workflows/ci.yml",
+      "run_number": 412,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 7654321,
+      "html_url": "https://github.com/acme-demo/payments-api/actions/runs/11223344551",
+      "created_at": "2026-11-08T10:00:00Z",
+      "updated_at": "2026-11-08T10:07:30Z",
+      "run_started_at": "2026-11-08T10:00:05Z",
+      "actor": {"login": "alice-dev", "id": 1001},
+      "triggering_actor": {"login": "alice-dev", "id": 1001}
+    },
+    {
+      "id": 11223344552,
+      "name": "Security Scan",
+      "head_branch": "develop",
+      "head_sha": "c8a2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/acme-demo/payments-api/actions/runs/11223344552",
+      "created_at": "2026-11-08T11:00:00Z",
+      "updated_at": "2026-11-08T11:03:00Z",
+      "run_started_at": "2026-11-08T11:00:00Z",
+      "actor": {"login": "bob-sec", "id": 1002}
+    },
+    {
+      "id": 11223344553,
+      "name": "Build & Push Image",
+      "head_branch": "main",
+      "head_sha": "d9b3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1",
+      "event": "workflow_dispatch",
+      "status": "in_progress",
+      "conclusion": null,
+      "html_url": "https://github.com/acme-demo/payments-api/actions/runs/11223344553",
+      "created_at": "2026-11-08T12:00:00Z",
+      "updated_at": "2026-11-08T12:01:00Z",
+      "run_started_at": "2026-11-08T12:00:02Z",
+      "actor": {"login": "carol-ops", "id": 1003}
+    }
+  ]
+}

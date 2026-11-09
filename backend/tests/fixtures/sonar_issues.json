@@ -1,0 +1,74 @@
+{
+  "total": 5,
+  "p": 1,
+  "ps": 100,
+  "paging": {"pageIndex": 1, "pageSize": 100, "total": 5},
+  "effortTotal": 67,
+  "issues": [
+    {
+      "key": "AYxk1-ABCD0001",
+      "rule": "python:S2077",
+      "severity": "CRITICAL",
+      "component": "acme_payments-api:app/repository.py",
+      "project": "acme_payments-api",
+      "line": 42,
+      "status": "OPEN",
+      "message": "Make sure using a dynamically formatted SQL query is safe here.",
+      "effort": "20min",
+      "type": "VULNERABILITY",
+      "cleanCodeAttribute": "COMPLETE",
+      "impacts": [{"softwareQuality": "SECURITY", "severity": "HIGH"}]
+    },
+    {
+      "key": "AYxk1-ABCD0002",
+      "rule": "python:S2068",
+      "severity": "BLOCKER",
+      "component": "acme_payments-api:app/settings.py",
+      "project": "acme_payments-api",
+      "line": 5,
+      "status": "OPEN",
+      "message": "\"password\" detected here, make sure this is not a hard-coded credential.",
+      "effort": "30min",
+      "type": "VULNERABILITY",
+      "impacts": [{"softwareQuality": "SECURITY", "severity": "BLOCKER"}]
+    },
+    {
+      "key": "AYxk1-ABCD0003",
+      "rule": "python:S2259",
+      "severity": "MAJOR",
+      "component": "acme_payments-api:app/services/report.py",
+      "project": "acme_payments-api",
+      "line": 51,
+      "status": "OPEN",
+      "message": "Fix this access on a value that can be \"None\".",
+      "effort": "10min",
+      "type": "BUG"
+    },
+    {
+      "key": "AYxk1-ABCD0004",
+      "rule": "python:S1192",
+      "severity": "MINOR",
+      "component": "acme_payments-api:app/services/billing.py",
+      "project": "acme_payments-api",
+      "line": 88,
+      "status": "CONFIRMED",
+      "message": "Define a constant instead of duplicating this literal \"invoice_id\" 4 times.",
+      "effort": "8min",
+      "type": "CODE_SMELL",
+      "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "LOW"}]
+    },
+    {
+      "key": "AYxk1-ABCD0005",
+      "rule": "python:S1481",
+      "severity": "MINOR",
+      "component": "acme_payments-api:app/api/orders.py",
+      "project": "acme_payments-api",
+      "line": 63,
+      "status": "CLOSED",
+      "resolution": "FIXED",
+      "message": "Remove the unused local variable \"response\".",
+      "type": "CODE_SMELL"
+    }
+  ],
+  "components": [{"key": "acme_payments-api", "qualifier": "TRK", "name": "Payments API"}]
+}

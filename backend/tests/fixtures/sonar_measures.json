@@ -1,0 +1,16 @@
+{
+  "component": {
+    "key": "acme_payments-api",
+    "name": "Payments API",
+    "qualifier": "TRK",
+    "measures": [
+      {"metric": "coverage", "value": "64.3", "bestValue": false},
+      {"metric": "duplicated_lines_density", "value": "1.2", "bestValue": false},
+      {"metric": "ncloc", "value": "18234"},
+      {"metric": "bugs", "value": "1"},
+      {"metric": "vulnerabilities", "value": "2"},
+      {"metric": "code_smells", "value": "1"},
+      {"metric": "security_rating", "value": "5.0"}
+    ]
+  }
+}
