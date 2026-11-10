@@ -135,6 +135,47 @@ def findings_summary(
     return {"by_category": result}
 
 
+@router.get("/findings/top-rules")
+def top_rules(
+    db: DbSession,
+    user: CurrentUser,
+    project_id: int | None = None,
+    limit: int = Query(8, ge=1, le=50),
+) -> list[dict[str, Any]]:
+    """Most frequent open rules / CVEs across the latest scans (security findings only)."""
+    ids = accessible_project_ids(db, user)
+    if project_id is not None:
+        ids = [i for i in ids if i == project_id]
+    scan_ids = [s.id for s in latest_scans(db, ids)]
+    worst = func.min(case(SEVERITY_RANK, value=Finding.severity, else_=len(SEVERITY_RANK)))
+    rows = db.execute(
+        select(
+            Finding.rule_id,
+            Finding.category,
+            func.max(Finding.title),
+            func.count(),
+            func.count(func.distinct(Finding.project_id)),
+            worst,
+        )
+        .where(Finding.scan_id.in_(scan_ids or [-1]), Finding.finding_type != "code_smell")
+        .group_by(Finding.rule_id, Finding.category)
+        .order_by(func.count().desc(), worst, Finding.rule_id)
+        .limit(limit)
+    ).all()
+    names = {v: k for k, v in SEVERITY_RANK.items()}
+    return [
+        {
+            "rule_id": rule,
+            "category": category,
+            "title": title,
+            "count": int(count),
+            "projects": int(projects),
+            "severity": names.get(int(rank), "info"),
+        }
+        for rule, category, title, count, projects, rank in rows
+    ]
+
+
 @router.get("/dependencies", response_model=list[DependencyOut])
 def dependency_inventory(
     db: DbSession, user: CurrentUser, project_id: int | None = None, vulnerable_only: bool = False

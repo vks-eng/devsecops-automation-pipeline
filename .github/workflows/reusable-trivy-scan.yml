@@ -1,0 +1,57 @@
+name: Reusable - Build image & Trivy scan
+
+# Builds a Docker image (never pushes or deploys it) and scans it with Trivy.
+# The JSON report can be imported into ShieldOps via POST /api/v1/projects/{id}/scans/import.
+on:
+  workflow_call:
+    inputs:
+      context:
+        type: string
+        default: "."
+      dockerfile:
+        type: string
+        default: Dockerfile
+      image-name:
+        type: string
+        required: true
+      severity:
+        type: string
+        default: CRITICAL,HIGH
+      fail-build:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Build image (local only, not pushed)
+        run: docker build -f "${{ inputs.context }}/${{ inputs.dockerfile }}" -t "${{ inputs.image-name }}:scan" "${{ inputs.context }}"
+      - name: Trivy JSON report
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.image-name }}:scan
+          format: json
+          output: trivy-report.json
+          exit-code: "0"
+      - name: Trivy gate
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.image-name }}:scan
+          format: table
+          severity: ${{ inputs.severity }}
+          ignore-unfixed: true
+          exit-code: ${{ inputs.fail-build && '1' || '0' }}
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: trivy-report
+          path: trivy-report.json

@@ -94,7 +94,7 @@ class TrivyDockerAdapter:
             "--security-opt",
             "no-new-privileges",
             "--tmpfs",
-            "/tmp:rw,size=512m",  # noqa: S108 - tmpfs inside the throw-away container
+            "/tmp:rw,size=512m",  # noqa: S108  # nosec B108 - tmpfs inside throw-away container
             "-v",
             f"{workdir}:/out",
             "-v",

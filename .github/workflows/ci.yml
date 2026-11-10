@@ -1,0 +1,159 @@
+name: CI
+
+# ShieldOps' own pipeline: the same quality and security gates the platform reports on.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  backend-lint:
+    name: Backend lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+
+  backend-security:
+    name: Backend security (bandit + pip-audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Bandit (SAST)
+        run: bandit -c pyproject.toml -r app -f txt
+      - name: pip-audit (SCA) on locked runtime dependencies
+        run: pip-audit -r requirements.txt --progress-spinner off
+
+  backend-tests:
+    name: Backend tests (pytest + PostgreSQL 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: shieldops
+          POSTGRES_PASSWORD: shieldops
+          POSTGRES_DB: shieldops_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shieldops"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg2://shieldops:shieldops@localhost:5432/shieldops_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt && pip install --no-deps -e .
+      - name: Migrations apply cleanly
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: alembic upgrade head && alembic check
+      - name: pytest
+        run: pytest --cov=app --cov-report=xml --cov-report=term --junitxml=junit.xml
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: backend-test-results
+          path: |
+            backend/coverage.xml
+            backend/junit.xml
+
+  frontend:
+    name: Frontend (eslint, tsc, vitest, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v5
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+  container-scan:
+    name: Docker build + Trivy scan
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-security, backend-tests, frontend]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build API image
+        run: docker build --target api -t shieldops-api:ci backend
+      - name: Build frontend image
+        run: docker build -t shieldops-frontend:ci frontend
+      - name: Trivy image scan (API)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: shieldops-api:ci
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy image scan (frontend)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: shieldops-frontend:ci
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Trivy filesystem scan (repo, misconfig + secrets)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          skip-dirs: frontend/node_modules,backend/.venv

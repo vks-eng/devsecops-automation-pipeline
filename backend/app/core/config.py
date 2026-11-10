@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 AdapterMode = Literal["mock", "real"]
 TrivyMode = Literal["mock", "binary", "docker"]
@@ -32,7 +33,10 @@ class Settings(BaseSettings):
     # If empty, a key is derived from SECRET_KEY (acceptable for dev only).
     token_encryption_key: str = ""
 
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]
+    cors_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:5173",
+        "http://localhost:8080",
+    ]
 
     # --- Background processing --------------------------------------------------------
     # eager=True executes Celery tasks in-process (no Redis needed). Default for dev/test.
@@ -70,7 +74,9 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:
-        if isinstance(v, str) and not v.strip().startswith("["):
+        if isinstance(v, str):
+            if v.strip().startswith("["):
+                return json.loads(v)
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 

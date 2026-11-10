@@ -172,7 +172,7 @@ class MockGitHubActionsAdapter:
         now = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
         current_slot = int(now.timestamp()) // (slot_hours * 3600)
         runs: list[dict[str, Any]] = []
-        for i in range(min(limit, 40)):
+        for i in range(min(limit, 100)):
             slot = current_slot - i
             rng = random.Random(seed * 100_003 + slot)  # nosec B311 - mock data only  # noqa: S311
             started = datetime.fromtimestamp(slot * slot_hours * 3600, UTC) + timedelta(

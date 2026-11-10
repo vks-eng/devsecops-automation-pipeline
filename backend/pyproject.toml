@@ -1,15 +1,14 @@
 [project]
-name = "devsecops-platform-api"
-version = "0.1.0"
-description = "DevSecOps Automation Platform - API and background workers"
-readme = "../README.md"
+name = "shieldops-api"
+version = "1.0.0"
+description = "ShieldOps: DevSecOps Automation Platform - API and background workers"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "MIT"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "pydantic>=2.7",
-    "pydantic-settings>=2.3",
+    "pydantic-settings>=2.7",
     "email-validator>=2.1",
     "sqlalchemy>=2.0.30,<2.1",
     "alembic>=1.13",
@@ -36,7 +35,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -64,7 +63,16 @@ known-first-party = ["app", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: pure unit tests (no database, no network)",
+    "integration: API + PostgreSQL and adapter integration tests",
+    "e2e: end-to-end user journeys through the API",
+    "contract: API / scanner-output contract tests",
+    "security: security-focused tests (authz, HMAC, injection, secrets)",
+    "smoke: fast critical-path subset (run with -m smoke)",
+    "slow: long-running tests (volume)",
+]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.bandit]

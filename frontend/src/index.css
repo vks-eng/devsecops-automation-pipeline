@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* ShieldOps design tokens: dark-first, cyan brand, severity scale. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-canvas: #070b14;
+  --color-surface: #0d1422;
+  --color-surface-2: #121b2d;
+  --color-surface-3: #18233a;
+  --color-line: #1f2b44;
+  --color-line-strong: #2b3a5a;
+  --color-ink: #e6ecf5;
+  --color-ink-muted: #94a3bd;
+  --color-ink-faint: #64748f;
+
+  --color-brand: #22d3ee;
+  --color-brand-strong: #06b6d4;
+  --color-brand-soft: #0e3a47;
+
+  --color-sev-critical: #f43f5e;
+  --color-sev-high: #fb923c;
+  --color-sev-medium: #facc15;
+  --color-sev-low: #60a5fa;
+  --color-sev-info: #94a3b8;
+
+  --color-ok: #34d399;
+  --color-warn: #fbbf24;
+  --color-bad: #f43f5e;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    background-image: radial-gradient(1200px 600px at 100% -10%, #0e3a4733, transparent),
+      radial-gradient(900px 500px at -10% 110%, #3b0d2a22, transparent);
+    background-attachment: fixed;
+  }
+  ::selection {
+    @apply bg-brand/30;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+}
+
+@utility card {
+  @apply rounded-xl border border-line bg-surface/90 shadow-[0_1px_0_0_#ffffff08_inset];
+}
+
+@utility card-title {
+  @apply text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted;
+}
+
+@utility btn {
+  @apply inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-brand text-canvas hover:bg-brand-strong;
+}
+
+@utility btn-ghost {
+  @apply btn border border-line bg-surface-2 text-ink hover:border-line-strong hover:bg-surface-3;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none;
+}
+
+@utility label {
+  @apply mb-1 block text-xs font-medium text-ink-muted;
+}
+
+@layer components {
+  .table {
+    @apply w-full text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-line px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint;
+  }
+  .table td {
+    @apply border-b border-line/60 px-3 py-2.5 align-top;
+  }
+  .table tbody tr {
+    @apply transition-colors hover:bg-surface-2/60;
+  }
+}

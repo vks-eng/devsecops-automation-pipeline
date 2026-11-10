@@ -60,7 +60,7 @@ def _notify_failure(db: Session, project: Project, row: PipelineRun) -> None:
 def sync_project_runs(db: Session, project: Project, notify: bool = True) -> int:
     provider = registry.get_ci_provider()
     token = credentials.get_token(db, project.id, "github")
-    payload = provider.list_workflow_runs(project.repo_owner, project.repo_name, token, limit=30)
+    payload = provider.list_workflow_runs(project.repo_owner, project.repo_name, token, limit=60)
     count = 0
     source = "mock" if provider.mode == "mock" else "api"
     for run in parse_workflow_runs(payload):

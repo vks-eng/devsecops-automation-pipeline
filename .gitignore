@@ -87,3 +87,4 @@ sonar-report*.json
 *.swp
 .DS_Store
 Thumbs.db
+.pgdata/

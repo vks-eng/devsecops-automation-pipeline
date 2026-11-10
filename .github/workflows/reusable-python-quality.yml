@@ -1,0 +1,74 @@
+name: Reusable - Python build, test & quality
+
+# Call from another repository:
+#   uses: vks-eng/devsecops-automation-pipeline/.github/workflows/reusable-python-quality.yml@main
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: "."
+      python-version:
+        type: string
+        default: "3.12"
+      requirements-file:
+        description: Pinned requirements (installed and audited)
+        type: string
+        default: requirements.txt
+      run-tests:
+        type: boolean
+        default: true
+      fail-on-audit:
+        description: Fail the job when pip-audit finds known vulnerabilities
+        type: boolean
+        default: true
+    outputs:
+      audit-report:
+        description: Name of the uploaded pip-audit artifact
+        value: ${{ jobs.quality.outputs.audit-report }}
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      audit-report: pip-audit-report
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r "${{ inputs.requirements-file }}"
+          pip install ruff bandit pip-audit pytest
+      - name: Ruff
+        run: ruff check . && ruff format --check .
+      - name: Bandit
+        run: bandit -r . -x ./tests,./.venv -ll
+      - name: pip-audit (JSON report for ShieldOps import)
+        run: |
+          set +e
+          pip-audit -r "${{ inputs.requirements-file }}" -f json -o pip-audit.json --progress-spinner off
+          status=$?
+          set -e
+          if [ "${{ inputs.fail-on-audit }}" = "true" ] && [ $status -ne 0 ]; then exit $status; fi
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: pip-audit-report
+          path: ${{ inputs.working-directory }}/pip-audit.json
+          if-no-files-found: ignore
+      - name: Tests
+        if: inputs.run-tests
+        run: pytest -q

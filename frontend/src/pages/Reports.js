@@ -1,0 +1,28 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Download, FileJson, FileSpreadsheet, FileText } from "lucide-react";
+import { useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Card, ErrorState, GradeBadge, Loading, PageHeader, StatusPill } from "../components/ui";
+import { downloadFile } from "../lib/api";
+import { formatPercent } from "../lib/format";
+import { usePortfolioSummary, useProjects, useTrends } from "../lib/queries";
+export default function ReportsPage() {
+    const summary = usePortfolioSummary();
+    const projects = useProjects();
+    const trends = useTrends(30);
+    const [error, setError] = useState(null);
+    const stamp = new Date().toISOString().slice(0, 10);
+    async function download(path, format, filename) {
+        setError(null);
+        try {
+            await downloadFile(path, { format }, filename);
+        }
+        catch (err) {
+            setError(err);
+        }
+    }
+    return (_jsxs("div", { className: "space-y-6", children: [_jsx(PageHeader, { title: "Reports", subtitle: "Scan summaries, score trends and downloadable reports with remediation recommendations.", actions: _jsxs("button", { type: "button", className: "btn-primary", onClick: () => download("/reports/summary", "csv", `security-summary-${stamp}.csv`), children: [_jsx(Download, { size: 15, "aria-hidden": true }), " Portfolio CSV"] }) }), error !== null && _jsx(ErrorState, { error: error }), _jsxs("div", { className: "grid gap-4 xl:grid-cols-3", children: [_jsx(Card, { title: "Average security score (30 days)", className: "xl:col-span-2", children: _jsx("div", { className: "h-56", children: trends.data && trends.data.scores.length > 0 ? (_jsx(ResponsiveContainer, { width: "100%", height: "100%", children: _jsxs(LineChart, { data: trends.data.scores, margin: { left: -16 }, children: [_jsx(CartesianGrid, { stroke: "#1f2b44", vertical: false }), _jsx(XAxis, { dataKey: "date", tick: { fill: "#64748f", fontSize: 11 }, tickFormatter: (d) => d.slice(5) }), _jsx(YAxis, { domain: [0, 100], tick: { fill: "#64748f", fontSize: 11 } }), _jsx(Tooltip, { contentStyle: { background: "#0d1422", border: "1px solid #1f2b44", fontSize: 12 } }), _jsx(Line, { type: "monotone", dataKey: "average_score", stroke: "#22d3ee", strokeWidth: 2, dot: { r: 3 }, isAnimationActive: false })] }) })) : (_jsx("p", { className: "py-16 text-center text-sm text-ink-muted", children: "Score history appears after scans complete." })) }) }), _jsxs(Card, { title: "Score methodology", children: [_jsx("p", { className: "font-mono text-xs leading-relaxed text-ink-muted", children: "score = 100 \u2212 min(60, 10\u00B7C + 5\u00B7H + 2\u00B7M + 0.5\u00B7L) \u2212 gate (15 failed / 5 warn) \u2212 15\u00B7(1 \u2212 pipeline success)" }), _jsx("p", { className: "mt-3 text-xs text-ink-faint", children: "Grades: A \u2265 90 \u00B7 B \u2265 80 \u00B7 C \u2265 70 \u00B7 D \u2265 60 \u00B7 F. Latest scan per target counts; code smells excluded." })] })] }), _jsxs(Card, { title: "Project reports", children: [summary.isLoading && _jsx(Loading, {}), summary.error && _jsx(ErrorState, { error: summary.error }), summary.data && (_jsx("div", { className: "overflow-x-auto", children: _jsxs("table", { className: "table", children: [_jsx("thead", { children: _jsxs("tr", { children: [_jsx("th", { children: "Project" }), _jsx("th", { children: "Team" }), _jsx("th", { children: "Score" }), _jsx("th", { children: "C / H / M / L" }), _jsx("th", { children: "Quality gate" }), _jsx("th", { children: "Pipelines" }), _jsx("th", { children: "Download" })] }) }), _jsx("tbody", { children: summary.data.map((row) => {
+                                        const project = projects.data?.find((p) => p.slug === row.project);
+                                        return (_jsxs("tr", { children: [_jsx("td", { className: "font-medium", children: row.name }), _jsx("td", { className: "text-ink-muted", children: row.team }), _jsx("td", { children: _jsx(GradeBadge, { grade: row.grade, score: row.score }) }), _jsxs("td", { className: "font-mono text-xs", children: [_jsx("span", { className: "text-sev-critical", children: row.critical }), " / ", _jsx("span", { className: "text-sev-high", children: row.high }), " / ", _jsx("span", { className: "text-sev-medium", children: row.medium }), " / ", _jsx("span", { className: "text-sev-low", children: row.low })] }), _jsx("td", { children: _jsx(StatusPill, { status: row.quality_gate || null }) }), _jsx("td", { className: "font-mono text-xs", children: formatPercent(row.pipeline_success_rate, 0) }), _jsx("td", { children: project && (_jsxs("div", { className: "flex gap-1", children: [_jsxs("button", { type: "button", className: "btn-ghost px-2 py-1 text-xs", "aria-label": `Download ${row.name} JSON report`, onClick: () => download(`/reports/projects/${project.id}`, "json", `security-report-${row.project}.json`), children: [_jsx(FileJson, { size: 14, "aria-hidden": true }), " JSON"] }), _jsxs("button", { type: "button", className: "btn-ghost px-2 py-1 text-xs", "aria-label": `Download ${row.name} CSV report`, onClick: () => download(`/reports/projects/${project.id}`, "csv", `security-report-${row.project}.csv`), children: [_jsx(FileSpreadsheet, { size: 14, "aria-hidden": true }), " CSV"] }), _jsxs("button", { type: "button", className: "btn-ghost px-2 py-1 text-xs", "aria-label": `Download ${row.name} HTML report`, onClick: () => download(`/reports/projects/${project.id}`, "html", `security-report-${row.project}.html`), children: [_jsx(FileText, { size: 14, "aria-hidden": true }), " HTML"] })] })) })] }, row.project));
+                                    }) })] }) }))] })] }));
+}

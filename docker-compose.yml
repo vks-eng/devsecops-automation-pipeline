@@ -1,0 +1,116 @@
+# ShieldOps local stack.
+#   docker compose up -d --build                 -> postgres, redis, api, worker, frontend
+#   docker compose --profile sonar up -d         -> + SonarQube and its database
+# Values come from .env (copy .env.example). No secrets are committed.
+
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-devsecops}:${POSTGRES_PASSWORD:-devsecops}@postgres:5432/${POSTGRES_DB:-devsecops}
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production-please-32b+}
+  TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
+  CELERY_TASK_ALWAYS_EAGER: "false"
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/1
+  GITHUB_MODE: ${GITHUB_MODE:-mock}
+  GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+  SONARQUBE_MODE: ${SONARQUBE_MODE:-mock}
+  SONARQUBE_URL: ${SONARQUBE_URL:-http://sonarqube:9000}
+  SONARQUBE_TOKEN: ${SONARQUBE_TOKEN:-}
+  TRIVY_MODE: ${TRIVY_MODE:-mock}
+  DOCKER_MODE: mock
+  PIP_AUDIT_MODE: ${PIP_AUDIT_MODE:-mock}
+  NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-devsecops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devsecops}
+      POSTGRES_DB: ${POSTGRES_DB:-devsecops}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devsecops}"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: { context: ./backend, target: api }
+    environment: *backend-env
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+  worker:
+    # Scanners run here, isolated from the API: fixed argv, ephemeral temp dirs (tmpfs),
+    # no Docker socket, all capabilities dropped. Trivy and pip-audit are baked in.
+    build: { context: ./backend, target: worker }
+    environment:
+      <<: *backend-env
+      TRIVY_MODE: ${TRIVY_MODE:-mock}
+    depends_on:
+      api: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports: ["8080:8080"]
+    depends_on: [api]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+
+  sonar-db:
+    profiles: [sonar]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+      POSTGRES_DB: sonar
+    volumes: [sonar-db:/var/lib/postgresql/data]
+
+  sonarqube:
+    profiles: [sonar]
+    image: sonarqube:community
+    depends_on: [sonar-db]
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    ports: ["9000:9000"]
+    volumes:
+      - sonar-data:/opt/sonarqube/data
+      - sonar-extensions:/opt/sonarqube/extensions
+
+volumes:
+  pgdata:
+  sonar-db:
+  sonar-data:
+  sonar-extensions:

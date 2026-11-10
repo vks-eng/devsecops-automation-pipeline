@@ -171,3 +171,15 @@ def project(client: Any, admin_headers: dict[str, str]) -> dict[str, Any]:
     r = client.post(f"{API}/projects", json=PROJECT_PAYLOAD, headers=admin_headers)
     assert r.status_code == 201, r.text
     return r.json()
+
+
+_LAYER_MARKERS = {"unit", "integration", "e2e", "contract"}
+
+
+def pytest_collection_modifyitems(config: Any, items: list[Any]) -> None:
+    """Mark every test with its layer, derived from its folder (tests/<layer>/...)."""
+    for item in items:
+        parts = Path(str(item.fspath)).parts
+        for layer in _LAYER_MARKERS:
+            if layer in parts:
+                item.add_marker(getattr(pytest.mark, layer))

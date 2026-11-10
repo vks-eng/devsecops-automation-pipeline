@@ -8,18 +8,88 @@ when ENVIRONMENT=production.
 
 from __future__ import annotations
 
+import math
 import sys
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.adapters.github_actions import MOCK_PINS, mock_requirements
+from app.adapters.pip_audit import MockPipAuditAdapter
 from app.core.config import get_settings
 from app.core.security import hash_password
 from app.core.validators import parse_github_repo_url
 from app.db.session import get_sessionmaker
-from app.models import Project, ProjectMember, ProjectRole, ScanType, User, UserRole
+from app.models import (
+    Project,
+    ProjectMember,
+    ProjectRole,
+    Scan,
+    ScanType,
+    ScoreSnapshot,
+    User,
+    UserRole,
+)
 from app.services.pipelines import sync_project_runs
-from app.services.scans import create_scan, execute_scan
+from app.services.scans import create_scan, execute_scan, import_scan_report
+
+HISTORY_DAYS = (28, 21, 14, 7)
+
+
+def _historical_requirements(full_name: str, days_ago: int) -> str:
+    """Older snapshots pin more vulnerable versions (dependencies were upgraded over time).
+
+    Starts from the repository's current mock requirements and reverts a share of the
+    already-patched packages to their vulnerable pin; the share grows with age.
+    """
+    vulnerable = {name: old for name, old, fixed in MOCK_PINS if fixed is not None}
+    lines = mock_requirements(full_name).splitlines()
+    pins = [line.split("==", 1) for line in lines if "==" in line]
+    patched = [n for n, v in pins if n in vulnerable and v != vulnerable[n]]
+    revert = set(patched[: math.ceil(len(patched) * days_ago / HISTORY_DAYS[0])])
+    return "".join(f"{n}=={vulnerable[n] if n in revert else v}\n" for n, v in pins)
+
+
+def seed_history(db: Session, project: Project, user_id: int) -> None:
+    """Back-dated scans so trend charts have history (demo data only).
+
+    Dependency scans use progressively more patched requirements, so the trend shows
+    remediation over time; code-quality and container scans repeat the mock results.
+    """
+    if db.scalar(select(Scan.id).where(Scan.project_id == project.id, Scan.trigger == "seed")):
+        return
+    auditor = MockPipAuditAdapter()
+    for days_ago in HISTORY_DAYS:
+        when = datetime.now(UTC) - timedelta(days=days_ago, hours=2)
+        last_snapshot = db.scalar(select(func.max(ScoreSnapshot.id))) or 0
+        report = auditor.audit_requirements(
+            _historical_requirements(project.repo_full_name, days_ago)
+        )
+        scans = [
+            import_scan_report(
+                db, project, ScanType.DEPENDENCY, project.default_branch, report, user_id
+            )
+        ]
+        targets = [(ScanType.CODE_QUALITY, None)] + [
+            (ScanType.CONTAINER, image) for image in project.container_images
+        ]
+        for scan_type, target in targets:
+            created = create_scan(db, project, scan_type, target, user_id, trigger="seed")
+            executed = execute_scan(db, created.id)
+            if executed is not None:
+                scans.append(executed)
+        for scan in scans:
+            scan.trigger = "seed"
+            scan.created_at = scan.started_at = scan.completed_at = when
+        for snapshot in db.scalars(
+            select(ScoreSnapshot).where(
+                ScoreSnapshot.project_id == project.id, ScoreSnapshot.id > last_snapshot
+            )
+        ):
+            snapshot.created_at = when
+        db.commit()
+
 
 DEMO_USERS = [
     ("admin@example.com", "Ada Admin", "ShieldOpsAdmin2026", UserRole.ADMIN),
@@ -115,6 +185,7 @@ def seed(db: Session) -> None:
             )
             db.commit()
         sync_project_runs(db, project, notify=False)
+        seed_history(db, project, admin.id)
         targets = [(ScanType.CODE_QUALITY, None), (ScanType.DEPENDENCY, None)] + [
             (ScanType.CONTAINER, image) for image in project.container_images
         ]

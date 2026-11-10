@@ -282,12 +282,12 @@ def test_scan_listing_is_scoped(
 def test_pipeline_sync_and_stats(client: Any, admin_headers: dict, project: dict, db: Any) -> None:
     pid = project["id"]
     r = client.post(f"{API}/projects/{pid}/pipelines/sync", headers=admin_headers)
-    assert r.status_code == 200 and r.json()["synced"] == 30
+    assert r.status_code == 200 and r.json()["synced"] == 60
     # Idempotent: same run IDs are upserted, not duplicated.
     client.post(f"{API}/projects/{pid}/pipelines/sync", headers=admin_headers)
-    assert db.query(PipelineRun).count() == 30
+    assert db.query(PipelineRun).count() == 60
     runs = client.get(f"{API}/pipelines/runs", params={"limit": 5}, headers=admin_headers).json()
-    assert runs["total"] == 30 and len(runs["items"]) == 5
+    assert runs["total"] == 60 and len(runs["items"]) == 5
     stats = client.get(f"{API}/pipelines/stats", headers=admin_headers).json()
     assert stats["total_runs"] > 0
     assert 0 <= stats["success_rate"] <= 1
@@ -403,5 +403,5 @@ def test_webhook_disabled_without_secret(client: Any, monkeypatch: pytest.Monkey
 def test_eager_worker_tasks(project: dict, db: Any) -> None:
     from app.worker.tasks import sync_all_pipelines
 
-    assert sync_all_pipelines.delay().get() == 30
+    assert sync_all_pipelines.delay().get() == 60
     assert db.query(Scan).count() == 0

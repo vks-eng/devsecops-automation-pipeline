@@ -1,0 +1,42 @@
+name: Reusable - SonarQube analysis
+
+# Runs sonar-scanner against a SonarQube server and waits for the quality gate.
+# ShieldOps then reads the results through the SonarQube Web API.
+on:
+  workflow_call:
+    inputs:
+      project-key:
+        type: string
+        required: true
+      sources:
+        type: string
+        default: "."
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SONAR_HOST_URL:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ inputs.project-key }}
+            -Dsonar.sources=${{ inputs.sources }}
+            -Dsonar.qualitygate.wait=true

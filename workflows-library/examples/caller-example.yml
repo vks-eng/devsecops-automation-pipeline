@@ -1,0 +1,31 @@
+# Example: .github/workflows/security.yml in a consuming repository.
+name: Security gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    uses: vks-eng/devsecops-automation-pipeline/.github/workflows/reusable-python-quality.yml@main
+    with:
+      working-directory: .
+      requirements-file: requirements.txt
+
+  container:
+    uses: vks-eng/devsecops-automation-pipeline/.github/workflows/reusable-trivy-scan.yml@main
+    with:
+      image-name: my-service
+      severity: CRITICAL,HIGH
+
+  sonarqube:
+    uses: vks-eng/devsecops-automation-pipeline/.github/workflows/reusable-sonarqube.yml@main
+    with:
+      project-key: my-org_my-service
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}        # configured in repo/org secrets
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
